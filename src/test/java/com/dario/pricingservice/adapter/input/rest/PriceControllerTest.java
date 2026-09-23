@@ -58,4 +58,44 @@ class PriceControllerTest {
                         .param("brandId", "1"))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void shouldReturnBadRequestWhenProductIdIsMissing()
+            throws Exception {
+        mockMvc.perform(get("/api/v1/prices")
+                        .param("applicationDate", "2020-06-14T16:00:00")
+                        .param("brandId", "1"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenProductIdIsNotPositive()
+            throws Exception {
+        mockMvc.perform(get("/api/v1/prices")
+                        .param("applicationDate", "2020-06-14T16:00:00")
+                        .param("productId", "0")
+                        .param("brandId", "1"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenApplicationDateIsInvalid()
+            throws Exception {
+        mockMvc.perform(get("/api/v1/prices")
+                        .param("applicationDate", "fecha-invalida")
+                        .param("productId", "35455")
+                        .param("brandId", "1"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenBrandIdIsNotPositive()
+            throws Exception {
+        mockMvc.perform(get("/api/v1/prices")
+                        .param("applicationDate", "2020-06-14T16:00:00")
+                        .param("productId", "35455")
+                        .param("brandId", "-1"))
+                .andExpect(status().isBadRequest());
+    }
+
 }

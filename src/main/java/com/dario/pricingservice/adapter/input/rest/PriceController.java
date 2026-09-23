@@ -31,15 +31,15 @@ public class PriceController {
 
     @GetMapping
     public ResponseEntity<PriceResponse> findApplicablePrice(
-            @RequestParam
+            @RequestParam("applicationDate")
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
             LocalDateTime applicationDate,
 
-            @RequestParam
+            @RequestParam("productId")
             @Positive
             Long productId,
 
-            @RequestParam
+            @RequestParam("brandId")
             @Positive
             Long brandId
     ) {
