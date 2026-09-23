@@ -20,17 +20,4 @@ public class PricePersistenceMapper {
         );
     }
 
-    public PriceEntity toEntity(Price price) {
-        return PriceEntity.of(
-                price.brandId(),
-                price.startDate(),
-                price.endDate(),
-                price.priceList(),
-                price.productId(),
-                price.priority(),
-                price.price(),
-                price.currency()
-        );
-    }
-
 }
