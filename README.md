@@ -27,6 +27,7 @@ Comprobar la versión de Java:
 ```bash
 java -version
 ```
+```
 
 ## Ejecución de la aplicación
 
@@ -135,14 +136,21 @@ curl "http://localhost:8080/api/v1/prices?applicationDate=2020-06-14T16:00:00&pr
 
 ## Reglas de negocio
 
-Una tarifa es aplicable cuando la fecha consultada está dentro de su intervalo de vigencia, incluyendo ambos extremos:
+Una tarifa es aplicable cuando corresponde al producto y a la marca solicitados y la fecha consultada pertenece a su intervalo de vigencia. Ambos extremos del intervalo son inclusivos:
 
 ```text
 startDate <= applicationDate <= endDate
 ```
 
-Si existen varias tarifas aplicables para el mismo producto y marca, se selecciona la de mayor prioridad.
-En caso de empate de prioridad, se utiliza como criterio secundario el identificador de tarifa menor.
+Entre las tarifas aplicables se selecciona la de mayor prioridad.
+
+Cuando varias tarifas tienen la misma prioridad, se selecciona la de menor `priceList`, identificador de la tarifa. Este criterio secundario es una decisión de la implementación, ya que el enunciado no define el desempate.
+
+Si varios registros comparten tanto la prioridad como `priceList`, no se establece un criterio adicional entre ellos.
+
+La consulta devuelve como máximo una tarifa. Si no existe ninguna aplicable, el endpoint responde con `404 Not Found`.
+
+El contrato de selección se define en `PriceQueryPort`. El adaptador de persistencia lo implementa mediante filtrado, ordenación y limitación del resultado en base de datos, sin cargar todas las tarifas para seleccionarlas en memoria.
 
 ## Datos iniciales
 
@@ -177,6 +185,7 @@ También se cubren:
 - Identificadores no positivos.
 - Fechas con formato inválido.
 - Aplicación de la tarifa general cuando no existe una tarifa específica.
+- Selección del menor `priceList` cuando las prioridades son iguales.
 
 ## Consola H2
 
@@ -198,11 +207,9 @@ La base de datos se mantiene en memoria y se reinicia al detener la aplicación.
 
 ## Arquitectura
 
-
 El proyecto utiliza arquitectura hexagonal, con separación entre dominio, aplicación y adaptadores. Las dependencias del código apuntan hacia las capas internas.
 
 ### Responsabilidades
-
 
 - **Dominio:** contiene el modelo `Price` y sus invariantes. No depende de Spring, JPA, HTTP ni de las capas de aplicación o adaptadores.
 - **Aplicación:** define los puertos de entrada y salida e implementa el caso de uso de consulta de precios. Depende del dominio, pero no conoce los detalles de REST ni de persistencia.
@@ -211,7 +218,6 @@ El proyecto utiliza arquitectura hexagonal, con separación entre dominio, aplic
 - **Configuración:** ensambla explícitamente el caso de uso, el adaptador de persistencia y los mappers mediante beans de Spring.
 
 ### Estructura principal
-
 
 ```text
 com.dario.pricingservice
@@ -249,9 +255,7 @@ com.dario.pricingservice
 └── PruebaTecnicaPreciosApplication.java
 ```
 
-
 ### Dirección de dependencias
-
 
 ```text
 Aplicación → Dominio
@@ -259,13 +263,11 @@ Adaptadores → Puertos de aplicación y modelo de dominio
 Configuración → Aplicación y adaptadores
 ```
 
-
 `FindApplicablePriceService` depende de `PriceQueryPort`, no de su implementación JPA. `ApplicationConfiguration` conecta ese contrato con `PricePersistenceAdapter`.
 
 El flujo de ejecución puede llegar desde el caso de uso hasta la base de datos, pero eso no introduce una dependencia de código desde la aplicación hacia el adaptador de persistencia.
 
 ### Fronteras entre capas
-
 
 - `PriceEntity` se utiliza exclusivamente en el adaptador de persistencia.
 - `PriceResponse` pertenece al adaptador REST.
@@ -273,7 +275,6 @@ El flujo de ejecución puede llegar desde el caso de uso hasta la base de datos,
 - Los mappers realizan las conversiones en los adaptadores.
 
 ### Integración con Spring
-
 
 El caso de uso, el adaptador de persistencia y los mappers se registran explícitamente en `ApplicationConfiguration`.
 
@@ -310,7 +311,12 @@ spring.datasource.url=jdbc:h2:mem:pricingdb
 
 ## Estado de verificación
 
-La última ejecución aportada de `verify`, con Java 21, finalizó con `BUILD SUCCESS`: 29 tests, sin fallos, errores ni tests omitidos.
+La última ejecución completa de `./mvnw clean verify` con Java 21 finalizó con:
+
+```text
+Tests run: 30, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
 
 Para reproducir la verificación desde una compilación limpia:
 
@@ -318,8 +324,9 @@ Para reproducir la verificación desde una compilación limpia:
 ./mvnw clean verify
 ```
 
-La verificación incluye:
-- Compilación con Java 21.
+La verificación completa incluye:
+
+- Compilación limpia con Java 21.
 - Tests unitarios.
 - Tests de integración.
 - Inicialización de H2.
