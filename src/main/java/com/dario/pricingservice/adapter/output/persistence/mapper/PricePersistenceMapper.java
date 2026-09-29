@@ -2,9 +2,7 @@ package com.dario.pricingservice.adapter.output.persistence.mapper;
 
 import com.dario.pricingservice.adapter.output.persistence.entity.PriceEntity;
 import com.dario.pricingservice.domain.model.Price;
-import org.springframework.stereotype.Component;
 
-@Component
 public class PricePersistenceMapper {
 
     public Price toDomain(PriceEntity entity) {

@@ -1,7 +1,7 @@
 package com.dario.pricingservice.application.service;
 
 import com.dario.pricingservice.domain.model.Price;
-import com.dario.pricingservice.domain.port.output.PriceQueryPort;
+import com.dario.pricingservice.application.port.out.PriceQueryPort;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

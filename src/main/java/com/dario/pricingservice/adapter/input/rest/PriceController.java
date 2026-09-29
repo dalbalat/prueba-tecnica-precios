@@ -1,7 +1,7 @@
 package com.dario.pricingservice.adapter.input.rest;
 
 import com.dario.pricingservice.adapter.input.rest.dto.PriceResponse;
-import com.dario.pricingservice.domain.port.input.FindApplicablePriceUseCase;
+import com.dario.pricingservice.application.port.in.FindApplicablePriceUseCase;
 import jakarta.validation.constraints.Positive;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;

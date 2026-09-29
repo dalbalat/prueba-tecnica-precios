@@ -1,11 +1,11 @@
-package com.dario.pricingservice.domain.port.input;
+package com.dario.pricingservice.application.port.out;
 
 import com.dario.pricingservice.domain.model.Price;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-public interface FindApplicablePriceUseCase {
+public interface PriceQueryPort {
 
     Optional<Price> findApplicablePrice(
             LocalDateTime applicationDate,

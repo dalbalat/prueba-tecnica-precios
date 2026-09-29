@@ -1,8 +1,8 @@
 package com.dario.pricingservice.application.service;
 
 import com.dario.pricingservice.domain.model.Price;
-import com.dario.pricingservice.domain.port.input.FindApplicablePriceUseCase;
-import com.dario.pricingservice.domain.port.output.PriceQueryPort;
+import com.dario.pricingservice.application.port.in.FindApplicablePriceUseCase;
+import com.dario.pricingservice.application.port.out.PriceQueryPort;
 
 import java.time.LocalDateTime;
 import java.util.Objects;

@@ -1,7 +1,7 @@
 package com.dario.pricingservice.configuration;
 
 import com.dario.pricingservice.application.service.FindApplicablePriceService;
-import com.dario.pricingservice.domain.port.input.FindApplicablePriceUseCase;
+import com.dario.pricingservice.application.port.in.FindApplicablePriceUseCase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
