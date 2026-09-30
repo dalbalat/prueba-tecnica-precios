@@ -18,6 +18,7 @@ La aplicación utiliza H2 en memoria y aplica la tarifa con mayor prioridad cuan
 ## Requisitos
 
 Para ejecutar el proyecto es necesario tener instalado:
+
 - JDK 21
 - Git, opcional
 - No es necesario instalar Maven porque el proyecto incluye Maven Wrapper
@@ -26,7 +27,6 @@ Comprobar la versión de Java:
 
 ```bash
 java -version
-```
 ```
 
 ## Ejecución de la aplicación
@@ -176,6 +176,7 @@ Los tests de integración validan las peticiones exigidas por el enunciado:
 | 2020-06-16 21:00 | 4 | 38.95 EUR |
 
 También se cubren:
+
 - Fechas exactamente iguales al inicio de una tarifa.
 - Fechas exactamente iguales al final de una tarifa.
 - Producto inexistente.
@@ -308,6 +309,66 @@ La configuración normal de la aplicación utiliza:
 ```properties
 spring.datasource.url=jdbc:h2:mem:pricingdb
 ```
+
+## Eficiencia de consulta e índices
+
+La consulta generada por Hibernate realiza en base de datos:
+
+- Filtrado por producto y marca.
+- Filtrado por intervalo temporal, con extremos inclusivos.
+- Ordenación por `priority DESC` y `price_list ASC`.
+- Limitación a un único resultado mediante `FETCH FIRST`.
+
+El adaptador no carga todas las tarifas para filtrarlas u ordenarlas en memoria. En la ejecución del test específico no se observó una consulta adicional de recuento.
+
+### Índice utilizado
+
+Se mantiene el índice compuesto:
+
+```sql
+CREATE INDEX idx_prices_product_brand_dates
+    ON prices (product_id, brand_id, start_date, end_date);
+```
+
+### Evaluación de alternativas
+
+Se compararon tres índices mediante `EXPLAIN ANALYZE` en H2 2.4.240, utilizando un esquema de laboratorio separado de los datos funcionales, en la misma base de datos en memoria.
+
+La carga sintética contenía:
+
+- 100.000 tarifas distribuidas entre 100 productos y 10 marcas, con 100 intervalos por pareja.
+- 10.000 tarifas adicionales para una misma pareja de producto y marca, con historial amplio e intervalos solapados.
+
+Se mantuvieron los mismos datos y consultas, evaluando un índice secundario cada vez, además de la clave primaria, y actualizando las estadísticas mediante `ANALYZE TABLE ... SAMPLE_SIZE 0`. Los recuentos finales confirmaron 110.000 filas de laboratorio, 10.000 para la pareja más poblada y las cuatro tarifas originales sin cambios.
+
+Los índices comparados fueron:
+
+- **Inicio:** `(product_id, brand_id, start_date, end_date)`.
+- **Prioridad:** `(product_id, brand_id, priority DESC, price_list ASC)`.
+- **Fin:** `(product_id, brand_id, end_date, start_date)`.
+
+Resultados observados de `scanCount`:
+
+| Escenario | Inicio | Prioridad | Fin |
+|---|---:|---:|---:|
+| Pareja ordinaria con tarifas aplicables | 62 | 101 | 70 |
+| Historial amplio, fecha avanzada | 7472 | 10001 | 2560 |
+| Historial amplio, fecha antigua | 16 | 10001 | 10001 |
+| Fecha anterior al historial | 1 | 10001 | 10001 |
+| Fecha posterior al historial | 10001 | 10001 | 1 |
+| Producto inexistente | 1 | 1 | 1 |
+
+`scanCount` describe la exploración registrada por H2; no representa directamente el tiempo de ejecución ni el número de resultados. No se utilizaron los milisegundos de la consola como benchmark.
+
+### Decisión y limitaciones
+
+Se conserva el índice original. El índice por prioridad no mejoró los recorridos observados. El índice por fecha de fin favoreció las consultas avanzadas y posteriores al historial, pero penalizó las consultas antiguas.
+
+El enunciado permite consultar cualquier fecha y no establece una distribución de solicitudes que justifique favorecer un extremo temporal. Tampoco se añaden índices adicionales sin demostrar que su beneficio compense el almacenamiento y mantenimiento en escrituras. No se evaluó la coexistencia de ambos índices temporales.
+
+Esta evaluación no demuestra que el índice conservado sea óptimo para cualquier carga. Las consultas sobre historiales extensos pueden requerir recorridos amplios, aunque devuelvan como máximo una tarifa.
+
+Los resultados corresponden a datos sintéticos de distribución regular y consultas con valores literales en H2. No constituyen una prueba de carga concurrente ni una garantía de rendimiento para otros motores, distribuciones de datos o planes de consultas parametrizadas.
 
 ## Estado de verificación
 
