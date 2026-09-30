@@ -295,16 +295,48 @@ Los controladores y el manejador de errores mantienen sus anotaciones Spring MVC
 - Tratamiento centralizado de errores REST.
 - Tests unitarios y de integración.
 
+## Estrategia de testing
+
+Cada capa se prueba en el nivel que le corresponde, sin levantar más
+infraestructura de la necesaria:
+
+| Capa | Clase de test | Alcance | Tests |
+|---|---|---|---:|
+| Dominio | `PriceTest` | Unitario, sin Spring | 14 |
+| Aplicación | `FindApplicablePriceServiceTest` | Unitario con mock del puerto de salida | 9 |
+| Configuración | `ApplicationConfigurationTest` | Contexto mínimo con `ApplicationContextRunner` | 1 |
+| Persistencia | `PriceJpaRepositoryTest` | `@DataJpaTest` con H2 embebida | 3 |
+| REST | `PriceControllerTest` | Integración completa con `MockMvc` | 16 |
+
+Los cinco escenarios obligatorios del enunciado se cubren en la integración
+REST con los datos del ejemplo.
+
+`PriceControllerTest` recorre HTTP, caso de uso, puerto de salida, JPA y H2.
+`FindApplicablePriceServiceTest` comprueba los argumentos exactos que el
+servicio delega al puerto y rechaza entradas inválidas sin consultarlo.
+`PriceTest` valida las invariantes del dominio sin Spring.
+`PriceJpaRepositoryTest` prueba la consulta contra la base de datos con el
+slice JPA. `ApplicationConfigurationTest` comprueba el ensamblado de beans
+sin base de datos ni capa web.
+
 ## Configuración de tests
 
-Los tests utilizan una base de datos H2 independiente por contexto:
+Cada prueba utiliza la infraestructura mínima que necesita:
+
+- La integración REST (`PriceControllerTest`) arranca el contexto completo
+  con `MockMvc` y una base H2 aislada por contexto:
 
 ```properties
 spring.datasource.url=jdbc:h2:mem:pricingdb-${random.uuid}
 ```
 
-Esto evita conflictos entre distintos contextos de Spring durante la ejecución de la suite.
-La configuración normal de la aplicación utiliza:
+La URL aleatoria evita que el esquema se ejecute dos veces sobre la misma
+base cuando Spring reutiliza contextos en caché.
+
+- La prueba de persistencia (`PriceJpaRepositoryTest`) usa `@DataJpaTest`,
+  que sustituye la fuente de datos por una base H2 embebida propia del slice.
+
+La aplicación fuera de los tests utiliza:
 
 ```properties
 spring.datasource.url=jdbc:h2:mem:pricingdb
@@ -375,7 +407,7 @@ Los resultados corresponden a datos sintéticos de distribución regular y consu
 La última ejecución completa de `./mvnw clean verify` con Java 21 finalizó con:
 
 ```text
-Tests run: 30, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 43, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
