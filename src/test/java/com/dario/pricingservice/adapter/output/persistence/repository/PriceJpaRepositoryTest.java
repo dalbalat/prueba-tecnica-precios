@@ -3,8 +3,7 @@ package com.dario.pricingservice.adapter.output.persistence.repository;
 import com.dario.pricingservice.adapter.output.persistence.entity.PriceEntity;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -12,7 +11,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@DataJpaTest
 class PriceJpaRepositoryTest {
 
     @Autowired
@@ -59,7 +58,6 @@ class PriceJpaRepositoryTest {
     }
 
     @Test
-    @Transactional
     void shouldSelectLowestPriceListWhenPrioritiesAreEqual() {
         LocalDateTime startDate = LocalDateTime.of(2020, 6, 14, 0, 0);
         LocalDateTime endDate = LocalDateTime.of(2020, 6, 14, 23, 59, 59);
